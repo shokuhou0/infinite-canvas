@@ -1,4 +1,5 @@
 import type { PromptSource } from "./prompt-source-presets";
+import { runLegacyPromptSource } from "./prompt-source-legacy-runtime";
 
 export type RawPrompt = {
     id: string;
@@ -29,6 +30,7 @@ async function fetchSource(source: PromptSource, options?: RunOptions) {
 
 export async function runPromptSource(source: PromptSource, options?: RunOptions): Promise<RawPrompt[]> {
     if (!source.url.trim()) throw new Error("JSON URL 不能为空");
+    if (source.parser !== "json") return runLegacyPromptSource(source, options);
     let data: unknown;
     try {
         data = await fetchSource(source, options);

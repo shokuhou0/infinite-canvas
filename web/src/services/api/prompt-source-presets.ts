@@ -1,5 +1,13 @@
 import { nanoid } from "nanoid";
 
+export type PromptSourceParser =
+    | "json"
+    | "awesome-gpt-image"
+    | "awesome-gpt4o-image-prompts"
+    | "youmind-gpt-image-2"
+    | "youmind-nano-banana-pro"
+    | "davidwu-gpt-image2-prompts";
+
 export type PromptSource = {
     id: string;
     name: string;
@@ -7,10 +15,12 @@ export type PromptSource = {
     homepage: string;
     enabled: boolean;
     builtIn: boolean;
+    parser: PromptSourceParser;
 };
 
 export const PROMPT_REGISTRY_HOMEPAGE = "https://github.com/yukkcat/image-prompts";
 const PROMPT_REGISTRY_SOURCE_BASE = "https://raw.githubusercontent.com/yukkcat/image-prompts/main/dist/sources";
+const LOCAL_PROMPT_ASSET_BASE = "/prompt-assets";
 
 export function createPromptSource(source?: Partial<PromptSource>): PromptSource {
     return {
@@ -20,18 +30,23 @@ export function createPromptSource(source?: Partial<PromptSource>): PromptSource
         homepage: source?.homepage?.trim() || "",
         enabled: source?.enabled ?? true,
         builtIn: source?.builtIn ?? false,
+        parser: source?.parser || "json",
     };
 }
 
 export const DEFAULT_PROMPT_SOURCES: PromptSource[] = [
     registrySource("banana-prompt-quicker", "Banana Prompt Quicker", "https://glidea.github.io/banana-prompt-quicker/"),
-    registrySource("davidwu-gpt-image2-prompts", "DavidWu GPT Image 2", "https://github.com/davidwuw0811-boop/awesome-gpt-image2-prompts"),
-    registrySource("awesome-gpt-image", "Awesome GPT Image", "https://github.com/ZeroLu/awesome-gpt-image"),
-    registrySource("awesome-gpt4o-image-prompts", "Awesome GPT-4o", "https://github.com/ImgEdify/Awesome-GPT4o-Image-Prompts"),
-    registrySource("youmind-gpt-image-2", "YouMind GPT Image 2", "https://github.com/YouMind-OpenLab/awesome-gpt-image-2"),
-    registrySource("youmind-nano-banana-pro", "YouMind Nano Banana Pro", "https://github.com/YouMind-OpenLab/awesome-nano-banana-pro-prompts"),
+    localSource("davidwu-gpt-image2-prompts", "DavidWu GPT Image 2", "https://github.com/davidwuw0811-boop/awesome-gpt-image2-prompts"),
+    localSource("awesome-gpt-image", "Awesome GPT Image", "https://github.com/ZeroLu/awesome-gpt-image"),
+    localSource("awesome-gpt4o-image-prompts", "Awesome GPT-4o", "https://github.com/ImgEdify/Awesome-GPT4o-Image-Prompts"),
+    localSource("youmind-gpt-image-2", "YouMind GPT Image 2", "https://github.com/YouMind-OpenLab/awesome-gpt-image-2"),
+    localSource("youmind-nano-banana-pro", "YouMind Nano Banana Pro", "https://github.com/YouMind-OpenLab/awesome-nano-banana-pro-prompts"),
 ];
 
 function registrySource(id: string, name: string, homepage: string): PromptSource {
-    return { id, name, url: `${PROMPT_REGISTRY_SOURCE_BASE}/${id}.json`, homepage, enabled: true, builtIn: true };
+    return { id, name, url: `${PROMPT_REGISTRY_SOURCE_BASE}/${id}.json`, homepage, enabled: true, builtIn: true, parser: "json" };
+}
+
+function localSource(parser: Exclude<PromptSourceParser, "json">, name: string, homepage: string): PromptSource {
+    return { id: parser, name, url: `${LOCAL_PROMPT_ASSET_BASE}/${parser}`, homepage, enabled: true, builtIn: true, parser };
 }
