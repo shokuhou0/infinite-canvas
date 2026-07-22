@@ -11,4 +11,5 @@ interface ImportMetaEnv {
     readonly VITE_ANALYTICS_GA4_ID?: string;
     // 百度统计站点 ID
     readonly VITE_ANALYTICS_BAIDU_ID?: string;
+    readonly VITE_NEW_API_BASE_URL?: string;
 }
