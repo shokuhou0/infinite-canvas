@@ -10,11 +10,17 @@ import {
     encodeChannelModel,
     guessCapability,
     modelOptionsFromChannels,
+    normalizeModelOptionValue,
+    selectableModelsByCapability,
+    type AiConfig,
     type ChannelModel,
+    type ModelCapability,
     useConfigStore,
 } from "@/stores/use-config-store";
 
 const NEW_API_CHANNEL_ID = "new-api-image";
+const NEW_API_CHANNEL_NAME = "千模岛 AI";
+const BUILT_IN_DEFAULT_CHANNEL_ID = "default";
 
 function removeHandoffFromHash() {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
@@ -30,6 +36,12 @@ function normalizeHandoffModels(names: string[]): ChannelModel[] {
         models[0] = { ...models[0], capability: "image" };
     }
     return models;
+}
+
+function pickAvailableModel(config: AiConfig, capability: ModelCapability, current: string) {
+    const options = selectableModelsByCapability(config, capability);
+    const normalized = normalizeModelOptionValue(current, config.channels);
+    return options.includes(normalized) ? normalized : options[0] || "";
 }
 
 export function ClientRootInit({ children }: { children: ReactNode }) {
@@ -59,7 +71,7 @@ export function ClientRootInit({ children }: { children: ReactNode }) {
                             modelNames = await fetchChannelModels(
                                 createModelChannel({
                                     id: NEW_API_CHANNEL_ID,
-                                    name: "New API · Image",
+                                    name: NEW_API_CHANNEL_NAME,
                                     baseUrl: handoff.base_url,
                                     apiKey: handoff.api_key,
                                     apiFormat: "openai",
@@ -72,26 +84,40 @@ export function ClientRootInit({ children }: { children: ReactNode }) {
 
                     const channel = createModelChannel({
                         id: NEW_API_CHANNEL_ID,
-                        name: "New API · Image",
+                        name: NEW_API_CHANNEL_NAME,
                         baseUrl: handoff.base_url,
                         apiKey: handoff.api_key,
                         apiFormat: "openai",
                         models: normalizeHandoffModels(modelNames),
                     });
-                    const channels = [channel, ...config.channels.filter((item) => item.id !== NEW_API_CHANNEL_ID)];
+                    const channels = [
+                        channel,
+                        ...config.channels.filter((item) => item.id !== NEW_API_CHANNEL_ID && item.id !== BUILT_IN_DEFAULT_CHANNEL_ID),
+                    ];
+                    const models = modelOptionsFromChannels(channels);
+                    const nextConfig = {
+                        ...config,
+                        channels,
+                        models,
+                        baseUrl: handoff.base_url,
+                        apiKey: handoff.api_key,
+                    };
                     const imageModel = channel.models.find((model) => model.capability === "image") || channel.models[0];
                     const imageModelValue = imageModel ? encodeChannelModel(channel.id, imageModel.name) : "";
 
                     updateConfig("channels", channels);
-                    updateConfig("models", modelOptionsFromChannels(channels));
+                    updateConfig("models", models);
                     updateConfig("baseUrl", handoff.base_url);
                     updateConfig("apiKey", handoff.api_key);
+                    updateConfig("videoModel", pickAvailableModel(nextConfig, "video", config.videoModel));
+                    updateConfig("textModel", pickAvailableModel(nextConfig, "text", config.textModel));
+                    updateConfig("audioModel", pickAvailableModel(nextConfig, "audio", config.audioModel));
                     if (imageModelValue) {
                         updateConfig("model", imageModelValue);
                         updateConfig("imageModel", imageModelValue);
                     }
                     setConfigDialogOpen(false);
-                    message.success("已安全导入 New API 的 Image 分组令牌");
+                    message.success("已安全导入千模岛 AI 渠道");
                 } catch (error) {
                     openConfigDialog(false);
                     message.error(error instanceof Error ? error.message : "New API 令牌导入失败，请重新打开无限画布");
